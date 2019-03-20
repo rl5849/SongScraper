@@ -1,25 +1,23 @@
+###
+#Author: rl5849
+#Github: github.com/rl5849
+##
+
 import requests
 import secrets
-import time
+from Logging import Logging
 import re
-import json
 from bs4 import BeautifulSoup
 import spotipy as spotipy
 import spotipy.util as util
-import urllib as urllib
-import spotipy.client as client
-
+from urllib.parse import unquote_plus
 
 auth_url = 'https://accounts.spotify.com/api/token'
-playlist = "https://alternativebuffalo.radio.com/get.php?callback=_freq_tagstation_data&type=&type=recent&count=100"
 songs_list = "recentEvents" #Name of the json element that contains the list of songs
 title_string = 'title' #Json elements for song and artist
 artist_string = 'artist'
-spotify_url = 'https://api.spotify.com/v1/playlists/%s/tracks'
 scope = 'playlist-modify-public'
 redirect_uri = "http://localhost:8000"
-song_lookup_url = "https://api.spotify.com/v1/search?q=track:{}%20artist:{}&type=track"
-#Hold them all so I can stop making requests
 
 class SongScraper:
     sp = None
@@ -28,10 +26,11 @@ class SongScraper:
     songs = {}
     songs_already_in_playlist = {}
     songs_added = 0
+    logger = None
 
     def GetPlaylistFromWeb(self):
         songs = {}
-        page = requests.get(playlist)
+        page = requests.get(secrets.Station_URL)
         if(page.status_code == 200):
             print("Got the playlist")
         else:
@@ -45,7 +44,10 @@ class SongScraper:
         songs_json = json[songs_list]
 
         for song_json in songs_json:
-            songs[song_json[title_string]] = song_json[artist_string]
+            song_str = re.sub(r'([^\s\w]|_)+', '', unquote_plus(song_json[title_string]))
+
+            ##Remove things after 'Ft'
+            songs[song_str] = unquote_plus(song_json[artist_string])
 
         self.songs = songs
 
@@ -57,8 +59,8 @@ class SongScraper:
     # Param : container - Name of the container that is being loaded into
     def FindContainer(self, container):
         js_links = []
-        container_containing_pages = [];
-        content = requests.get(playlist).content
+        container_containing_pages = []
+        content = requests.get(secrets.Station_URL).content
 
         soup = BeautifulSoup(content, 'html.parser')
         js_tags = soup.findAll("script")
@@ -84,7 +86,7 @@ class SongScraper:
 
         playlist_id = 0
         for playlist_item in playlists['items']:
-            if(playlist_item["name"] == "Alternative Buffalo"):
+            if(playlist_item["name"] == secrets.Spotify_Playlist_Name):
                 playlist_id = playlist_item["id"]
                 break
 
@@ -95,20 +97,21 @@ class SongScraper:
 
         for song, artist in self.songs.items():
             result = self.sp.search(song+" "+artist, limit=1, offset=0, type='track')
-            song = result['tracks']['items']
+            song_result = result['tracks']['items']
 
-            if len(song) > 0:
-                song_id = song[0]['id']
+            if len(song_result) > 0:
+                song_id = song_result[0]['id']
                 #Dont add duplicates
                 if song_id not in self.songs_already_in_playlist:
                     track_ids.append(song_id)
                     self.songs_already_in_playlist.append(song_id)
                     self.songs_added += 1
+                    self.logger.logInfo("Adding song to playlist: {} by {}".format(song, artist))
 
                 if len(track_ids) >= 50:
                     track_ids.clear()
             else:
-                print("Search failed for songs: {} by {}".format(song, artist))
+                self.logger.logInfo("Search failed for songs: {} by {}".format(song, artist))
 
         #Periodically sends 50, send remainders
         if len(track_ids) > 0:
@@ -119,9 +122,9 @@ class SongScraper:
         if len(track_ids) > 0:
             self.sp.user_playlist_add_tracks(user=secrets.User_Name, playlist_id=self.playlist_id, tracks=track_ids,
                                          position=0)
-            print("Pushing new batch of {} more songs".format(self.songs_added))
+            self.logger.logInfo("Pushing new batch of {} more songs".format(self.songs_added))
         else:
-            print("Didn't get any songs to send")
+            self.logger.logInfo("Didn't get any songs to send")
 
 
     def GetPlaylistContents(self):
@@ -137,6 +140,7 @@ class SongScraper:
 
 
     def initialize(self):
+        self.logger = Logging()
 
         #Get list of songs from web
         if len(self.songs) <= 0:
@@ -181,11 +185,12 @@ class SongScraper:
 
     def main(self):
         if not self.initialize():
-            print("Unknown Error!")
+            self.logger.logInfo("Unknown Error!")
             return
+        self.logger.logInfo("\nStarting new run")
 
         self.AddSongsToPlayList()
-        print("Done! Added {} new songs!".format(self.songs_added))
+        self.logger.logInfo("Done! Added {} new songs!".format(self.songs_added))
         return
 
 
