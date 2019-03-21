@@ -44,41 +44,31 @@ class SongScraper:
         songs_json = json[songs_list]
 
         for song_json in songs_json:
-            song_str = re.sub(r'([^\s\w]|_)+', '', unquote_plus(song_json[title_string]))
-
-            ##Remove things after 'Ft'
-            songs[song_str] = unquote_plus(song_json[artist_string])
+            songs[self.CleanSongString(song_json[title_string])] = unquote_plus(song_json[artist_string])
 
         self.songs = songs
 
         return
 
-    #Helper method to find the ajax call that renders the songs into the container
-    # 1. Searches for all the script tags, then extracts all the urls in them
-    # 2. Looks on each page for the container name
-    # Param : container - Name of the container that is being loaded into
-    def FindContainer(self, container):
-        js_links = []
-        container_containing_pages = []
-        content = requests.get(secrets.Station_URL).content
 
-        soup = BeautifulSoup(content, 'html.parser')
-        js_tags = soup.findAll("script")
-        print("Found " + str(len(js_tags)) + " tags")
+    def CleanSongString(self, string):
+        #Url decode
+        string = unquote_plus(string)
 
-        for tag in js_tags:
-            link = re.findall('https?://(?:[-\w.]|(?:%[\da-fA-F]{2}))+.*?(?=\")', str(tag))
-            if(len(link) > 0):
-                js_links.append(link)
+        #Remove non alphanumeric
+        re.sub(r'([^\s\w]|_)+', '', string)
 
-        for link in js_links:
-            content_child = requests.get(link).content
-            occurances = re.findall(container, content_child)
-            if (len(occurances) > 0):
-                container_containing_pages.append(link)
+        string = re.sub("&", "", string)
 
-        return container_containing_pages
+        #Remove Hashtagged prefixes to the songs
+        unhashtagged = re.match("^#.*? - (.*)", string)
+        string = unhashtagged.groups()[0] if unhashtagged else string
 
+        #remove 'Ft' and beyond
+        unfeatured = re.match("^(.*?).Ft", string)
+        string = unfeatured.groups()[0] if unfeatured else string
+
+        return string.strip()
 
 
     def GetSpecificPlaylist(self):
@@ -111,20 +101,20 @@ class SongScraper:
                 if len(track_ids) >= 50:
                     track_ids.clear()
             else:
-                self.logger.logInfo("Search failed for songs: {} by {}".format(song, artist))
+                self.logger.logError("Search failed for songs: {} by {}".format(song, artist))
 
         #Periodically sends 50, send remainders
         if len(track_ids) > 0:
-            self.AddSongsToSpotify(track_ids)
+            self.SendSongsToSpotify(track_ids)
         return
 
-    def AddSongsToSpotify(self, track_ids):
+    def SendSongsToSpotify(self, track_ids):
         if len(track_ids) > 0:
             self.sp.user_playlist_add_tracks(user=secrets.User_Name, playlist_id=self.playlist_id, tracks=track_ids,
                                          position=0)
             self.logger.logInfo("Pushing new batch of {} more songs".format(self.songs_added))
         else:
-            self.logger.logInfo("Didn't get any songs to send")
+            self.logger.logError("Didn't get any songs to send")
 
 
     def GetPlaylistContents(self):
@@ -187,7 +177,7 @@ class SongScraper:
         if not self.initialize():
             self.logger.logInfo("Unknown Error!")
             return
-        self.logger.logInfo("\nStarting new run")
+        self.logger.logInfo("Starting new run")
 
         self.AddSongsToPlayList()
         self.logger.logInfo("Done! Added {} new songs!".format(self.songs_added))
