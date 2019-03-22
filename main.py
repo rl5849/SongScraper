@@ -119,12 +119,21 @@ class SongScraper:
 
     def GetPlaylistContents(self):
         song_ids = []
+        foundAllSongs = False
+        currentOffset = 0
 
         if not self.playlist_id:
             return
-        currentPlaylistContents = self.sp.user_playlist_tracks(secrets.User_Name, playlist_id=self.playlist_id, fields=None,market=None)
-        for song in currentPlaylistContents['items']:
-            song_ids.append(song['track']['id'])
+
+        #Spotify only delivers 100 songs at a time, I want them all
+        while not foundAllSongs:
+            currentPlaylistContents = self.sp.user_playlist_tracks(secrets.User_Name, playlist_id=self.playlist_id, fields='items(track(id))',market=None, offset=currentOffset)
+
+            foundAllSongs = (len(currentPlaylistContents['items']) < 100)
+
+            for song in currentPlaylistContents['items']:
+                song_ids.append(song['track']['id'])
+            currentOffset += 100
 
         return song_ids
 
