@@ -7,7 +7,6 @@ import requests
 import secrets
 from Logging import Logging
 import re
-from bs4 import BeautifulSoup
 import spotipy as spotipy
 import spotipy.util as util
 from urllib.parse import unquote_plus
@@ -59,6 +58,8 @@ class SongScraper:
         re.sub(r'([^\s\w]|_)+', '', string)
 
         string = re.sub("&", "", string)
+        string = re.sub("\.", "", string)
+
 
         #Remove Hashtagged prefixes to the songs
         unhashtagged = re.match("^#.*? - (.*)", string)
@@ -66,6 +67,12 @@ class SongScraper:
 
         #remove 'Ft' and beyond
         unfeatured = re.match("^(.*?).Ft", string)
+        string = unfeatured.groups()[0] if unfeatured else string
+
+        unfeatured = re.match("^(.*?).ft", string)
+        string = unfeatured.groups()[0] if unfeatured else string
+
+        unfeatured = re.match("^(.*?).feat", string)
         string = unfeatured.groups()[0] if unfeatured else string
 
         return string.strip()
