@@ -10,6 +10,7 @@ import re
 import spotipy as spotipy
 import spotipy.util as util
 from urllib.parse import unquote_plus
+import argparse
 
 auth_url = 'https://accounts.spotify.com/api/token'
 songs_list = "recentEvents" #Name of the json element that contains the list of songs
@@ -104,15 +105,17 @@ class SongScraper:
                     self.songs_already_in_playlist.append(song_id)
                     self.songs_added += 1
                     self.logger.logInfo("Adding song to playlist: {} by {}".format(song, artist))
-
-                if len(track_ids) >= 50:
-                    track_ids.clear()
             else:
                 self.logger.logError("Search failed for songs: {} by {}".format(song, artist))
 
-        #Periodically sends 50, send remainders
+            #Periodically sends 50, send remainders
+            if len(track_ids) > 50:
+                self.SendSongsToSpotify(track_ids)
+                track_ids.clear()
+        #Send remainders
         if len(track_ids) > 0:
             self.SendSongsToSpotify(track_ids)
+            track_ids.clear()
         return
 
     def SendSongsToSpotify(self, track_ids):
@@ -189,7 +192,7 @@ class SongScraper:
 
 
 
-    def main(self):
+    def run(self):
         if not self.initialize():
             self.logger.logInfo("Unknown Error!")
             return
@@ -200,7 +203,25 @@ class SongScraper:
         return
 
 
+def main(**kwargs):
+    run_type = None
+    if not kwargs:
+        parser = argparse.ArgumentParser()
+        parser.add_argument("file", '--itunes_import', action="store_true", type=str, help='Do you want to specify a file to import an iTunes library from.')
+        parser.add_argument("-w", '--web_import', action="store_true", type=str, help='Do you want to import songs from the web.')
+        args = parser.parse_args()
+        run_type = args.file
+    else:
+        run_type = kwargs.get('a')
+
+
+
+
+
+
+
 
 if __name__ == '__main__':
     songScraper = SongScraper()
-    songScraper.main()
+    songScraper.run()
+
