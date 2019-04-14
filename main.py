@@ -4,6 +4,7 @@
 ##
 
 import requests
+import sys
 import secrets
 from Logging import Logging
 import re
@@ -11,6 +12,7 @@ import spotipy as spotipy
 import spotipy.util as util
 from urllib.parse import unquote_plus
 import argparse
+import ItunesToSpotify
 
 auth_url = 'https://accounts.spotify.com/api/token'
 songs_list = "recentEvents" #Name of the json element that contains the list of songs
@@ -203,25 +205,21 @@ class SongScraper:
         return
 
 
-def main(**kwargs):
-    run_type = None
-    if not kwargs:
-        parser = argparse.ArgumentParser()
-        parser.add_argument("file", '--itunes_import', action="store_true", type=str, help='Do you want to specify a file to import an iTunes library from.')
-        parser.add_argument("-w", '--web_import', action="store_true", type=str, help='Do you want to import songs from the web.')
-        args = parser.parse_args()
-        run_type = args.file
-    else:
-        run_type = kwargs.get('a')
-
-
-
-
-
-
 
 
 if __name__ == '__main__':
-    songScraper = SongScraper()
-    songScraper.run()
+
+
+    parser = argparse.ArgumentParser(description='CLI python script for building Spotify playlists')
+
+    parser.add_argument('--itunes_import', action="store", dest="file", help='Do you want to specify a file to import an iTunes library from.')
+    parser.add_argument('--web_import', help='Do you want to import songs from the web.')
+    args = parser.parse_known_args()
+
+    #if args[0].itunes_import:
+    #    ItunesToSpotify.ItunesToSpotify(args.file)
+    if args[0].web_import is not None:
+        songScraper = SongScraper()
+        songScraper.run()
+
 
