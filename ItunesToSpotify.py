@@ -1,9 +1,12 @@
 import main
+import secrets
 
-
-def ItunesToSpotify(file):
+def ItunesToSpotify(file, playlist):
     songScraper = main.SongScraper()
     songScraper.initialize()
+    songScraper.ChangeLoggingDir(secrets.logging_path_itunes)
+    songScraper.ChangePlaylist(playlist)
+
 
     with open(file, 'r', encoding='utf-8') as fp:
         line  = fp.readline()

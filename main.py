@@ -29,6 +29,17 @@ class SongScraper:
     songs_already_in_playlist = {}
     songs_added = 0
     logger = None
+    playlist = ""
+
+
+    def ChangeLoggingDir(self, newDir):
+        if self.logger:
+            self.logger.loggingDir = newDir
+
+    def ChangePlaylist(self, newPlaylist):
+        if self.playlist:
+            self.playlist = newPlaylist
+
 
     def GetPlaylistFromWeb(self):
         songs = {}
@@ -86,7 +97,7 @@ class SongScraper:
 
         playlist_id = 0
         for playlist_item in playlists['items']:
-            if(playlist_item["name"] == secrets.Spotify_Playlist_Name):
+            if(playlist_item["name"] == self.playlist):
                 playlist_id = playlist_item["id"]
                 break
 
@@ -194,7 +205,8 @@ class SongScraper:
 
 
 
-    def run(self):
+    def run(self, playlist):
+        self.playlist = playlist
         if not self.initialize():
             self.logger.logInfo("Unknown Error!")
             return
@@ -208,18 +220,22 @@ class SongScraper:
 
 
 if __name__ == '__main__':
-
-
     parser = argparse.ArgumentParser(description='CLI python script for building Spotify playlists')
-
     parser.add_argument('--itunes_import', action="store", dest="file", help='Do you want to specify a file to import an iTunes library from.')
-    parser.add_argument('--web_import', help='Do you want to import songs from the web.')
+    parser.add_argument('--playlist', action="store", dest="playlist", help='Spotify playlist to import into.')
+    parser.add_argument('--web_import', action="store_true", help='Do you want to import songs from the web.')
     args = parser.parse_known_args()
 
-    #if args[0].itunes_import:
-    #    ItunesToSpotify.ItunesToSpotify(args.file)
-    if args[0].web_import is not None:
-        songScraper = SongScraper()
-        songScraper.run()
-
+    if args[0].playlist is None:
+        print("Please specify a playlist")
+    else:
+        if args[0].file is not None:
+            print("Importing Itunes file from: " + args[0].file)
+            ItunesToSpotify.ItunesToSpotify(args[0].file, args[0].playlist)
+        elif args[0].web_import:
+            print("Importing from web...")
+            songScraper = SongScraper()
+            songScraper.run(args[0].playlist)
+        else:
+            print("Please specify an action...")
 

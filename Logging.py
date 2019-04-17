@@ -3,10 +3,12 @@ import datetime
 import secrets
 
 class Logging:
+    loggingDir = secrets.logging_path
+
     def logInfo(self, message):
         currentDT = datetime.datetime.now()
 
-        f = open(secrets.logging_path, "a")
+        f = open(self.loggingDir, "a")
         f.write("INFO: " + currentDT.strftime("%Y-%m-%d %H:%M:%S") + ": " + message+"\n")
         f.close()
         return
@@ -14,7 +16,7 @@ class Logging:
     def logError(self, message):
         currentDT = datetime.datetime.now()
 
-        f = open(secrets.logging_path, "a")
+        f = open(self.loggingDir, "a")
         f.write("ERROR: " + currentDT.strftime("%Y-%m-%d %H:%M:%S") + ": " + message+"\n")
         f.close()
         return
