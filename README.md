@@ -1,8 +1,8 @@
 # SongScraper
 
-##Create Spotify playlists from radio station playlists or import an itunes playlust
+## Create Spotify playlists from radio station playlists or import an itunes playlust
 
-####Usage
+#### Usage
 ```
   -h, --help            show this help message and exit
   --itunes_import FILE  Do you want to specify a file to import an iTunes
