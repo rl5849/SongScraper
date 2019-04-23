@@ -4,8 +4,7 @@
 ##
 
 import requests
-import sys
-import secrets
+import config
 from Logging import Logging
 import re
 import spotipy as spotipy
@@ -43,7 +42,7 @@ class SongScraper:
 
     def GetPlaylistFromWeb(self):
         songs = {}
-        page = requests.get(secrets.Station_URL)
+        page = requests.get(config.Station_URL)
         if(page.status_code == 200):
             print("Got the playlist")
         else:
@@ -93,7 +92,7 @@ class SongScraper:
 
 
     def GetSpecificPlaylist(self):
-        playlists = self.sp.user_playlists(secrets.User_Name)
+        playlists = self.sp.user_playlists(config.User_Name)
 
         playlist_id = 0
         for playlist_item in playlists['items']:
@@ -133,7 +132,7 @@ class SongScraper:
 
     def SendSongsToSpotify(self, track_ids):
         if len(track_ids) > 0:
-            self.sp.user_playlist_add_tracks(user=secrets.User_Name, playlist_id=self.playlist_id, tracks=track_ids,
+            self.sp.user_playlist_add_tracks(user=config.User_Name, playlist_id=self.playlist_id, tracks=track_ids,
                                          position=0)
             self.logger.logInfo("Pushing new batch of {} more songs".format(self.songs_added))
         else:
@@ -150,7 +149,7 @@ class SongScraper:
 
         #Spotify only delivers 100 songs at a time, I want them all
         while not foundAllSongs:
-            currentPlaylistContents = self.sp.user_playlist_tracks(secrets.User_Name, playlist_id=self.playlist_id, fields='items(track(id))',market=None, offset=currentOffset)
+            currentPlaylistContents = self.sp.user_playlist_tracks(config.User_Name, playlist_id=self.playlist_id, fields='items(track(id))',market=None, offset=currentOffset)
 
             foundAllSongs = (len(currentPlaylistContents['items']) < 100)
 
@@ -175,8 +174,8 @@ class SongScraper:
 
         #Get auth token
         if not self.token or self.sp is None:
-            token = util.prompt_for_user_token(secrets.User_Name, scope, client_id=secrets.Client_ID,
-                                               client_secret=secrets.Client_Secret, redirect_uri=redirect_uri)
+            token = util.prompt_for_user_token(config.User_Name, scope, client_id=config.Client_ID,
+                                               client_secret=config.Client_Secret, redirect_uri=redirect_uri)
             self.sp = spotipy.Spotify(auth=token)
 
             if not self.token or self.sp is None:

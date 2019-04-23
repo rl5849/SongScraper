@@ -1,8 +1,8 @@
-import main
+import SongScraper
 import secrets
 
 def ItunesToSpotify(file, playlist):
-    songScraper = main.SongScraper()
+    songScraper = SongScraper.SongScraper()
     songScraper.initialize()
     songScraper.ChangeLoggingDir(secrets.logging_path_itunes)
     songScraper.ChangePlaylist(playlist)
