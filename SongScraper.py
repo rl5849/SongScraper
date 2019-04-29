@@ -15,7 +15,7 @@ import ItunesToSpotify
 
 auth_url = 'https://accounts.spotify.com/api/token'
 songs_list = "recentEvents" #Name of the json element that contains the list of songs
-title_string = 'title' #Json elements for song and artist
+title_string = 'title' #Json elements for song and artist (from web)
 artist_string = 'artist'
 scope = 'playlist-modify-public'
 redirect_uri = "http://localhost:8000"
@@ -40,9 +40,13 @@ class SongScraper:
             self.playlist = newPlaylist
 
 
+    #This is where we connect get the stations playlist
+    #If you wanted to run with another station, this is
+    #where you would modify how the JSON is indexed into, based
+    #on their JSON structure
     def GetPlaylistFromWeb(self):
         songs = {}
-        page = requests.get(config.Station_URL)
+        page = requests.get(config.Station_URL)#URL to the JSON endpt
         if(page.status_code == 200):
             print("Got the playlist")
         else:
@@ -55,6 +59,7 @@ class SongScraper:
         #Get the item that has all the
         songs_json = json[songs_list]
 
+        #Build a dict of song title to artists
         for song_json in songs_json:
             songs[self.CleanSongString(song_json[title_string])] = unquote_plus(song_json[artist_string])
 
@@ -91,6 +96,7 @@ class SongScraper:
         return string.strip()
 
 
+    #Used to find the playlist ID of the playlist the user entered
     def GetSpecificPlaylist(self):
         playlists = self.sp.user_playlists(config.User_Name)
 
@@ -99,6 +105,8 @@ class SongScraper:
             if(playlist_item["name"] == self.playlist):
                 playlist_id = playlist_item["id"]
                 break
+        if playlist_id == 0:
+            Logging.logError("Failed to find the playlist: " + self.playlist)
 
         return playlist_id
 
@@ -106,12 +114,12 @@ class SongScraper:
         track_ids = []
 
         for song, artist in self.songs.items():
-            result = self.sp.search(song+" "+artist, limit=1, offset=0, type='track')
+            result = self.sp.search(song+" "+artist, limit=1, offset=0, type='track') #Get only tracks, no albums, artists, etc
             song_result = result['tracks']['items']
 
             if len(song_result) > 0:
                 song_id = song_result[0]['id']
-                #Dont add duplicates
+                #Don't add duplicates
                 if song_id not in self.songs_already_in_playlist:
                     track_ids.append(song_id)
                     self.songs_already_in_playlist.append(song_id)
@@ -120,7 +128,7 @@ class SongScraper:
             else:
                 self.logger.logError("Search failed for songs: {} by {}".format(song, artist))
 
-            #Periodically sends 50, send remainders
+            #Periodically sends 50 songs
             if len(track_ids) > 50:
                 self.SendSongsToSpotify(track_ids)
                 track_ids.clear()
@@ -130,10 +138,11 @@ class SongScraper:
             track_ids.clear()
         return
 
+    #Take a list of track IDs and add them to the playlist
     def SendSongsToSpotify(self, track_ids):
         if len(track_ids) > 0:
             self.sp.user_playlist_add_tracks(user=config.User_Name, playlist_id=self.playlist_id, tracks=track_ids,
-                                         position=0)
+                                                position=0)
             self.logger.logInfo("Pushing new batch of {} more songs".format(self.songs_added))
         else:
             self.logger.logError("Didn't get any songs to send")
@@ -151,10 +160,12 @@ class SongScraper:
         while not foundAllSongs:
             currentPlaylistContents = self.sp.user_playlist_tracks(config.User_Name, playlist_id=self.playlist_id, fields='items(track(id))',market=None, offset=currentOffset)
 
+            #If we got less than 100, that was the end of the playlist
             foundAllSongs = (len(currentPlaylistContents['items']) < 100)
 
             for song in currentPlaylistContents['items']:
                 song_ids.append(song['track']['id'])
+            #increase the offset of how deep we are in the playlist
             currentOffset += 100
 
         return song_ids
@@ -203,7 +214,6 @@ class SongScraper:
         return True
 
 
-
     def run(self, playlist):
         self.playlist = playlist
         if not self.initialize():
@@ -214,8 +224,6 @@ class SongScraper:
         self.AddSongsToPlayList()
         self.logger.logInfo("Done! Added {} new songs!".format(self.songs_added))
         return
-
-
 
 
 if __name__ == '__main__':

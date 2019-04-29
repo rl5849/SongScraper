@@ -1,9 +1,9 @@
 ##Author: rl5849
 import datetime
-import secrets
+import config
 
 class Logging:
-    loggingDir = secrets.logging_path
+    loggingDir = config.logging_path
 
     def logInfo(self, message):
         currentDT = datetime.datetime.now()
