@@ -1,6 +1,6 @@
 # SongScraper
 
-## Create Spotify playlists from radio station playlists or import an itunes playlust
+## Create Spotify playlists from radio station playlists or import an itunes playlist
 
 #### Usage
 ```
