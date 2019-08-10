@@ -4,7 +4,7 @@
 ##
 
 import requests
-import config
+import secrets as config
 from Logging import Logging
 import re
 import spotipy as spotipy
@@ -12,6 +12,7 @@ import spotipy.util as util
 from urllib.parse import unquote_plus
 import argparse
 import ItunesToSpotify
+import DirectoryImport
 
 auth_url = 'https://accounts.spotify.com/api/token'
 songs_list = "recentEvents" #Name of the json element that contains the list of songs
@@ -231,6 +232,9 @@ if __name__ == '__main__':
     parser.add_argument('--itunes_import', action="store", dest="file", help='Do you want to specify a file to import an iTunes library from.')
     parser.add_argument('--playlist', action="store", dest="playlist", help='Spotify playlist to import into.')
     parser.add_argument('--web_import', action="store_true", help='Do you want to import songs from the web.')
+    parser.add_argument('--dir_import', action="store_true", help='Do you want to import songs from a local directory.')
+    parser.add_argument('--directory', action="store", dest="directory", help='Local directory to read from')
+
     args = parser.parse_known_args()
 
     if args[0].playlist is None:
@@ -243,6 +247,9 @@ if __name__ == '__main__':
             print("Importing from web...")
             songScraper = SongScraper()
             songScraper.run(args[0].playlist)
+        elif args[0].dir_import:
+            print("Importing from local directory...")
+            DirectoryImport.RunDirectoryImport(args[0].directory, args[0].playlist)
         else:
             print("Please specify an action...")
 

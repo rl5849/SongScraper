@@ -9,6 +9,8 @@
                         library from.
   --playlist PLAYLIST   Spotify playlist to import into.
   --web_import          Do you want to import songs from the web.
+  --dir_import          Do you want to import songs from a local directory
+    --directoy          directory to read
 
 ```
 
