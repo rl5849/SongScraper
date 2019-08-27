@@ -4,7 +4,7 @@
 ##
 
 import requests
-import secrets as config
+import config as config
 from Logging import Logging
 import re
 import spotipy as spotipy

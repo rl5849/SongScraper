@@ -1,6 +1,6 @@
 ##Author: rl5849
 import datetime
-import secrets as config
+import config as config
 
 class Logging:
     loggingDir = config.logging_path
